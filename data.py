@@ -130,7 +130,9 @@ def build_input_fn(builder, is_training):
         label = tf.one_hot(label, num_classes)
       return image, label, 1.0
 
-    dataset = builder.tf.data.TFRecordDataset('temp/cifar_data/cifar10-test.tfrecord')
+    dataset = builder.as_dataset(
+        split=FLAGS.train_split if is_training else FLAGS.eval_split,
+        shuffle_files=is_training, as_supervised=True)
     if FLAGS.cache_dataset:
       dataset = dataset.cache()
     if is_training:
