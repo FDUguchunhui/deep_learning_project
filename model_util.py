@@ -167,7 +167,9 @@ def linear_layer(x,
     if use_bn:
       x = resnet.batch_norm_relu(x, is_training, relu=False, center=use_bias)
 
-    
+    # add non-linear part
+    x = tf.nn.relu(x)
+
     x = tf.layers.dense(
         inputs=x,
         units=num_classes,
