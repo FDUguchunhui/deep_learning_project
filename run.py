@@ -418,7 +418,6 @@ def main(argv):
       use_tpu=FLAGS.use_tpu)
 
   if FLAGS.mode == 'eval':
-      # M: evaluate using saved checkpoints
     for ckpt in tf.train.checkpoints_iterator(
         run_config.model_dir, min_interval_secs=15):
       try:

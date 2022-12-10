@@ -136,16 +136,10 @@ def build_input_fn(builder, is_training):
     if is_training:
       buffer_multiplier = 50 if FLAGS.image_size <= 32 else 10
       dataset = dataset.shuffle(params['batch_size'] * buffer_multiplier)
-      # Repeats this dataset so each original value is seen count times.
-      # if count is None or -1 is for the dataset be repeated indefinitely
       dataset = dataset.repeat(-1)
-
     dataset = dataset.map(map_fn,
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    # Combines consecutive elements of this dataset into batches.
-    # drop_remainder: whether the last batch should be dropped in the case it has fewer than batch_size elements
     dataset = dataset.batch(params['batch_size'], drop_remainder=is_training)
-
     dataset = pad_to_batch(dataset, params['batch_size'])
     images, labels, mask = tf.data.make_one_shot_iterator(dataset).get_next()
 
