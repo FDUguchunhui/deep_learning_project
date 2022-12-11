@@ -129,7 +129,7 @@ def linear_layer(x,
   with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
     x = tf.layers.dense(
         inputs=x,
-        units=num_classes,
+        units=1000,
         use_bias=use_bias and not use_bn,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
     if use_bn:
