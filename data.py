@@ -100,7 +100,7 @@ def pad_to_batch(dataset, batch_size):
   return dataset.map(_pad_to_batch)
 
 
-def build_input_fn(builder, is_training):
+def build_input_fn(is_training):
   """Build input function.
 
   Args:
@@ -115,7 +115,7 @@ def build_input_fn(builder, is_training):
     """Inner input function."""
     preprocess_fn_pretrain = get_preprocess_fn(is_training, is_pretrain=True)
     preprocess_fn_finetune = get_preprocess_fn(is_training, is_pretrain=False)
-    num_classes = builder.info.features['label'].num_classes
+    num_classes = 10
 
     def map_fn(image, label):
       """Produces multiple transformations of the same batch."""
@@ -130,15 +130,50 @@ def build_input_fn(builder, is_training):
         label = tf.one_hot(label, num_classes)
       return image, label, 1.0
 
-    dataset = builder.as_dataset(
-        split=FLAGS.train_split if is_training else FLAGS.eval_split,
-        shuffle_files=is_training, as_supervised=True)
-    if FLAGS.cache_dataset:
-      dataset = dataset.cache()
+
+    if is_training:
+      dataset = tf.data.TFRecordDataset(FLAGS.data_dir + '/cifar10-train.tfrecord-00000-of-00001')
+    else:
+      dataset = tf.data.TFRecordDataset(FLAGS.data_dir + '/cifar10-test.tfrecord-00000-of-00001')
+    # dataset = builder.as_dataset(
+    #     split=FLAGS.train_split if is_training else FLAGS.eval_split,
+    #     shuffle_files=is_training, as_supervised=True)
+
+
+    # read by cifar-10 format
+    def read_dataset(dataset):
+
+      image_feature_description = {
+        'image': tf.io.FixedLenFeature([], tf.string),
+        'label': tf.io.FixedLenFeature([], tf.int64),
+      }
+
+      def _parse_image_function(example_proto):
+        features = tf.io.parse_single_example(example_proto, image_feature_description)
+        image = tf.io.decode_raw(features['image'], tf.uint8)
+        image.set_shape([3 * 32 * 32])
+        image = tf.reshape(image, [32, 32, 3])
+
+        label = tf.cast(features['label'], tf.int64)
+        # label = tf.one_hot(label, 10)
+
+        return image, label
+
+      dataset = dataset.map(_parse_image_function, num_parallel_calls=10)
+
+      return dataset
+
+    dataset = read_dataset(dataset)
+
+
+    # if FLAGS.cache_dataset:
+    #   dataset = dataset.cache()
     if is_training:
       buffer_multiplier = 50 if FLAGS.image_size <= 32 else 10
       dataset = dataset.shuffle(params['batch_size'] * buffer_multiplier)
       dataset = dataset.repeat(-1)
+
+
     dataset = dataset.map(map_fn,
                           num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.batch(params['batch_size'], drop_remainder=is_training)
