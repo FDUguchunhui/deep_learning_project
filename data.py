@@ -141,44 +141,51 @@ def build_input_fn(is_training):
 
 
     # read by cifar-10 format
-    def read_dataset(dataset):
+    def parse_record(raw_record):
+      IMAGE_HEIGHT = 32
+      IMAGE_WIDTH = 32
+      IMAGE_DEPTH = 3
+      NUM_CLASSES = 10
 
-      image_feature_description = {
-        'image': tf.io.FixedLenFeature([], tf.string),
-        'label': tf.io.FixedLenFeature([], tf.int64),
-      }
+      # Every record consists of a label followed by the image, with a fixed number
+      # of bytes for each.
+      label_bytes = 1
+      image_bytes = IMAGE_HEIGHT * IMAGE_WIDTH * IMAGE_DEPTH
+      record_bytes = label_bytes + image_bytes
 
-      def _parse_image_function(example_proto):
-        features = tf.io.parse_single_example(example_proto, image_feature_description)
-        image = tf.io.decode_raw(features['image'], tf.uint8)
-        image.set_shape([3 * 32 * 32])
-        image = tf.reshape(image, [32, 32, 3])
+      # Convert from a string to a vector of uint8 that is record_bytes long.
+      record_vector = tf.decode_raw(raw_record, tf.uint8)
 
-        label = tf.cast(features['label'], tf.int64)
-        # label = tf.one_hot(label, 10)
+      # The first byte represents the label, which we convert from uint8 to int32
+      # and then to one-hot.
+      label = tf.cast(record_vector[0], tf.int32)
 
-        return image, label
+      # The remaining bytes after the label represent the image, which we reshape
+      # from [depth * height * width] to [depth, height, width].
+      depth_major = tf.reshape(
+        record_vector[label_bytes:record_bytes], [IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH])
 
-      dataset = dataset.map(_parse_image_function, num_parallel_calls=10)
+      # Convert from [depth, height, width] to [height, width, depth], and cast as
+      # float32.
+      image = tf.cast(tf.transpose(depth_major, [1, 2, 0]), tf.float32)
 
-      return dataset
+      return image, label
 
-    dataset = read_dataset(dataset)
-
+    dataset = dataset.map(parse_record)
 
     # if FLAGS.cache_dataset:
     #   dataset = dataset.cache()
-    if is_training:
-      buffer_multiplier = 50 if FLAGS.image_size <= 32 else 10
-      dataset = dataset.shuffle(params['batch_size'] * buffer_multiplier)
-      dataset = dataset.repeat(-1)
+    # if is_training:
+    #   buffer_multiplier = 50 if FLAGS.image_size <= 32 else 10
+    #   dataset = dataset.shuffle(params['batch_size'] * buffer_multiplier)
+    #   dataset = dataset.repeat(-1)
 
 
-    dataset = dataset.map(map_fn,
-                          num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    # dataset = dataset.map(map_fn,
+    #                       num_parallel_calls=tf.data.experimental.AUTOTUNE)
     dataset = dataset.batch(params['batch_size'], drop_remainder=is_training)
-    dataset = pad_to_batch(dataset, params['batch_size'])
-    images, labels, mask = tf.data.make_one_shot_iterator(dataset).get_next()
+    # dataset = pad_to_batch(dataset, params['batch_size'])
+    images, labels = tf.data.make_one_shot_iterator(dataset).get_next()
 
     return images, {'labels': labels, 'mask': mask}
   return _input_fn

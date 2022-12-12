@@ -443,8 +443,8 @@ def main(argv):
       if result['global_step'] >= train_steps:
         return
   else:
-    estimator.train(
-        data_lib.build_input_fn(True), max_steps=train_steps)
+    input_fn = data_lib.build_input_fn(True)
+    estimator.train(input_fn, max_steps=train_steps)
     if FLAGS.mode == 'train_then_eval':
       perform_evaluation(
           estimator=estimator,
