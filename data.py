@@ -130,8 +130,14 @@ def build_input_fn(builder, is_training):
         label = tf.one_hot(label, num_classes)
       return image, label, 1.0
 
+    # split flag for which part of data to use
+    split = FLAGS.train_split if is_training else FLAGS.eval_split
+    # for example train[:80%] will only use the first 80% data in the train split
+    if FLAGS.train_split_perc != 100 and is_training:
+        split = split + '[:' + str(FLAGS.train_split_perc) + '%]'
+
     dataset = builder.as_dataset(
-        split=FLAGS.train_split if is_training else FLAGS.eval_split,
+        split=split,
         shuffle_files=is_training, as_supervised=True)
     if FLAGS.cache_dataset:
       dataset = dataset.cache()

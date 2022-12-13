@@ -37,6 +37,10 @@ import tensorflow_hub as hub
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_integer(
+    'train_split_perc', 100,
+    'Default use 100% of the training example')
+
 
 flags.DEFINE_float(
     'learning_rate', 0.3,
