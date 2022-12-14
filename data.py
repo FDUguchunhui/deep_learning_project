@@ -158,12 +158,11 @@ def build_input_fn(is_training):
 
       # The first byte represents the label, which we convert from uint8 to int32
       # and then to one-hot.
-      label = tf.cast(record_vector[0], tf.int32)
+      label = tf.cast(record_vector[0], tf.int64)
 
       # The remaining bytes after the label represent the image, which we reshape
       # from [depth * height * width] to [depth, height, width].
-      depth_major = tf.reshape(
-        record_vector[label_bytes:record_bytes], [IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH])
+      depth_major = tf.reshape(record_vector[label_bytes:record_bytes], [IMAGE_DEPTH, IMAGE_HEIGHT, IMAGE_WIDTH])
 
       # Convert from [depth, height, width] to [height, width, depth], and cast as
       # float32.
@@ -171,7 +170,7 @@ def build_input_fn(is_training):
 
       return image, label
 
-    dataset = dataset.map(parse_record)
+    dataset = dataset.map(lambda x: tf.py_function(parse_record, [x], [tf.float32, tf.int64]))
 
     # if FLAGS.cache_dataset:
     #   dataset = dataset.cache()
@@ -181,11 +180,10 @@ def build_input_fn(is_training):
     #   dataset = dataset.repeat(-1)
 
 
-    # dataset = dataset.map(map_fn,
-    #                       num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    # dataset = dataset.map(map_fn)
     dataset = dataset.batch(params['batch_size'], drop_remainder=is_training)
     # dataset = pad_to_batch(dataset, params['batch_size'])
-    images, labels = tf.data.make_one_shot_iterator(dataset).get_next()
+    images, labels, mask = tf.data.make_one_shot_iterator(dataset).get_next()
 
     return images, {'labels': labels, 'mask': mask}
   return _input_fn

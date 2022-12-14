@@ -38,6 +38,11 @@ import tensorflow_hub as hub
 FLAGS = flags.FLAGS
 
 
+flags.DEFINE_enum(
+    'classifier', 'linear', ['linear', 'non-linear'],
+    'Use a linear or non-linear classifier head otherwise a linear classifier head')
+
+
 flags.DEFINE_float(
     'learning_rate', 0.3,
     'Initial learning rate per batch size of 256.')
