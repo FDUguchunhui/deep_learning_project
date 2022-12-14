@@ -42,6 +42,11 @@ flags.DEFINE_integer(
     'Default use 100% of the training example')
 
 
+flags.DEFINE_enum(
+    'classifier', 'linear', ['linear', 'non-linear'],
+    'Use a linear or non-linear classifier head otherwise a linear classifier head')
+
+
 flags.DEFINE_float(
     'learning_rate', 0.3,
     'Initial learning rate per batch size of 256.')
@@ -372,11 +377,21 @@ def main(argv):
     tf.config.set_soft_device_placement(True)
 
 
-  builder = tfds.builder(FLAGS.dataset, data_dir=FLAGS.data_dir)
-  builder.download_and_prepare()
-  num_train_examples = builder.info.splits[FLAGS.train_split].num_examples
-  num_eval_examples = builder.info.splits[FLAGS.eval_split].num_examples
-  num_classes = builder.info.features['label'].num_classes
+
+
+  # builder = tfds.builder(FLAGS.dataset, data_dir=FLAGS.data_dir)
+  # builder.download_and_prepare()
+  # num_train_examples = builder.info.splits[FLAGS.train_split].num_examples
+  # num_eval_examples = builder.info.splits[FLAGS.eval_split].num_examples
+  # num_classes = builder.info.features['label'].num_classes
+  #
+  # train_steps = model_util.get_train_steps(num_train_examples)
+  # eval_steps = int(math.ceil(num_eval_examples / FLAGS.eval_batch_size))
+  # epoch_steps = int(round(num_train_examples / FLAGS.train_batch_size))
+
+  num_train_examples = 50000
+  num_eval_examples = 10000
+  num_classes = 10
 
   train_steps = model_util.get_train_steps(num_train_examples)
   eval_steps = int(math.ceil(num_eval_examples / FLAGS.eval_batch_size))
@@ -427,7 +442,7 @@ def main(argv):
       try:
         result = perform_evaluation(
             estimator=estimator,
-            input_fn=data_lib.build_input_fn(builder, False),
+            input_fn=data_lib.build_input_fn(False),
             eval_steps=eval_steps,
             model=model,
             num_classes=num_classes,
@@ -437,12 +452,12 @@ def main(argv):
       if result['global_step'] >= train_steps:
         return
   else:
-    estimator.train(
-        data_lib.build_input_fn(builder, True), max_steps=train_steps)
+    input_fn = data_lib.build_input_fn(True)
+    estimator.train(input_fn, max_steps=train_steps)
     if FLAGS.mode == 'train_then_eval':
       perform_evaluation(
           estimator=estimator,
-          input_fn=data_lib.build_input_fn(builder, False),
+          input_fn=data_lib.build_input_fn(False),
           eval_steps=eval_steps,
           model=model,
           num_classes=num_classes)
