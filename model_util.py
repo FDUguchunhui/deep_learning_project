@@ -134,7 +134,7 @@ def linear_layer(x,
         kernel_initializer=tf.random_normal_initializer(stddev=.01))
     if use_bn:
       x = resnet.batch_norm_relu(x, is_training, relu=False, center=use_bias)
-
+    x = tf.identity(x, '%s_out' % name)
   return x
 
 
