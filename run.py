@@ -386,6 +386,8 @@ def main(argv):
   num_classes = builder.info.features['label'].num_classes
 
   train_steps = model_util.get_train_steps(num_train_examples)
+  # recalculate the training steps if only use a portion of training set
+  # cau
   if FLAGS.train_split_perc != 100:
     train_steps = model_util.get_train_steps(num_train_examples * FLAGS.train_split_perc/100)
   eval_steps = int(math.ceil(num_eval_examples / FLAGS.eval_batch_size))
