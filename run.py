@@ -379,23 +379,16 @@ def main(argv):
 
 
 
-  # builder = tfds.builder(FLAGS.dataset, data_dir=FLAGS.data_dir)
-  # builder.download_and_prepare()
-  # num_train_examples = builder.info.splits[FLAGS.train_split].num_examples
-  # num_eval_examples = builder.info.splits[FLAGS.eval_split].num_examples
-  # num_classes = builder.info.features['label'].num_classes
-  #
-  # train_steps = model_util.get_train_steps(num_train_examples)
-  # eval_steps = int(math.ceil(num_eval_examples / FLAGS.eval_batch_size))
-  # epoch_steps = int(round(num_train_examples / FLAGS.train_batch_size))
-
-  num_train_examples = 50000
-  num_eval_examples = 10000
-  num_classes = 10
+  builder = tfds.builder(FLAGS.dataset, data_dir=FLAGS.data_dir)
+  builder.download_and_prepare()
+  num_train_examples = builder.info.splits[FLAGS.train_split].num_examples
+  num_eval_examples = builder.info.splits[FLAGS.eval_split].num_examples
+  num_classes = builder.info.features['label'].num_classes
 
   train_steps = model_util.get_train_steps(num_train_examples)
   eval_steps = int(math.ceil(num_eval_examples / FLAGS.eval_batch_size))
   epoch_steps = int(round(num_train_examples / FLAGS.train_batch_size))
+
 
   resnet.BATCH_NORM_DECAY = FLAGS.batch_norm_decay
   model = resnet.resnet_v1(
@@ -452,12 +445,12 @@ def main(argv):
       if result['global_step'] >= train_steps:
         return
   else:
-    input_fn = data_lib.build_input_fn(True)
+    input_fn = data_lib.build_input_fn(builder, False)
     estimator.train(input_fn, max_steps=train_steps)
     if FLAGS.mode == 'train_then_eval':
       perform_evaluation(
           estimator=estimator,
-          input_fn=data_lib.build_input_fn(False),
+          input_fn=data_lib.build_input_fn(builder, False),
           eval_steps=eval_steps,
           model=model,
           num_classes=num_classes)

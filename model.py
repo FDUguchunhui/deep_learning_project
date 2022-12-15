@@ -170,7 +170,7 @@ def build_model_fn(model, num_classes, num_train_examples):
             # Init op that initializes output layer parameters to zeros.
             output_layer_parameters = [
                 var for var in tf.trainable_variables() if var.name.startswith(
-                    'head_supervised')]
+                      'head_supervised')]
             tf.logging.info('Initializing output layer parameters %s to zero',
                             [x.op.name for x in output_layer_parameters])
             with tf.control_dependencies([tf.global_variables_initializer()]):

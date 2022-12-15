@@ -125,28 +125,35 @@ def linear_layer(x,
   Returns:
     logits of shape (bsz, num_classes)
   """
-  assert x.shape.ndims == 2, x.shape
-  with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
+  # assert x.shape.ndims == 2, x.shape
+  # with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
+  if FLAGS.classifier == 'linear':
+      x = tf.layers.dense(
+          inputs=x,
+          units=num_classes,
+          use_bias=use_bias and not use_bn,
+          kernel_initializer=tf.random_normal_initializer(stddev=.01))
+      if use_bn:
+        x = resnet.batch_norm_relu(x, is_training, relu=False, center=use_bias)
+
+  # check whether to use a non-linear-classifier
+  else:
     x = tf.layers.dense(
-        inputs=x,
-        units=1000,
-        use_bias=use_bias and not use_bn,
-        kernel_initializer=tf.random_normal_initializer(stddev=.01))
-    if use_bn:
-      x = resnet.batch_norm_relu(x, is_training, relu=False, center=use_bias)
+          inputs=x,
+          units=1000,
+          kernel_initializer=tf.random_normal_initializer(stddev=.01))
 
-    # check whether to use a non-linear-classifier
-    if FLAGS.classifier == 'non-linear':
-        # add non-linear part
-        x = tf.nn.relu(x)
+      # add non-linear part
+    x = tf.nn.relu(x)
 
-        x = tf.layers.dense(
-            inputs=x,
-            units=num_classes,
-            use_bias=use_bias and not use_bn,
-            kernel_initializer=tf.random_normal_initializer(stddev=.01))
+    x = tf.layers.dense(
+          inputs=x,
+          units=num_classes,
+          use_bias=use_bias and not use_bn,
+          kernel_initializer=tf.random_normal_initializer(stddev=.01))
 
-    x = tf.identity(x, '%s_out' % name)
+  x = tf.identity(x, '%s_out' % name)
+
   return x
 
 
