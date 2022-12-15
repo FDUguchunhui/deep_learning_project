@@ -379,7 +379,10 @@ def main(argv):
   num_eval_examples = builder.info.splits[FLAGS.eval_split].num_examples
   num_classes = builder.info.features['label'].num_classes
 
+
   train_steps = model_util.get_train_steps(num_train_examples)
+  if FLAGS.train_split_perc != 100:
+    train_steps =  model_util.get_train_steps(num_train_examples * FLAGS.train_split_perc/ 100)
   eval_steps = int(math.ceil(num_eval_examples / FLAGS.eval_batch_size))
   epoch_steps = int(round(num_train_examples / FLAGS.train_batch_size))
 
